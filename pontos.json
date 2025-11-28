@@ -1,0 +1,15 @@
+{
+  "pontoPousoInicio": { "x": 120, "y": 380 },
+  "pontoPousoFim": { "x": 350, "y": 380 },
+  "pontoDecolagem": { "x": 1200, "y": 380 },
+  "rebocadorBase1": { "x": 1100, "y": 700 },
+  "rebocadorBase2": { "x": 1130, "y": 700 },
+  "pontoBusca": { "x": 420, "y": 380 },
+  "vagas": [
+      {"x": 600, "y": 540},
+      {"x": 720, "y": 540},
+      {"x": 840, "y": 540},
+      {"x": 960, "y": 540},
+      {"x": 1080, "y": 540}
+  ]
+}
