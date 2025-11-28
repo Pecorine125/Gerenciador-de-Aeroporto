@@ -1,30 +1,20 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>Simulador de Aeroporto</title>
+    <title>Gerenciador de Aeroporto</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
-    <!-- Fundo do GitHub (RAW) -->
-    <img id="bg"
-         src="https://raw.githubusercontent.com/Pecorine125/Gerenciador-de-Aeroporto/main/assets/cenario.png"
-         alt="Cenário do aeroporto">
-
-    <!-- Painel -->
-    <div id="painel">
-        <h2>TORRE DE CONTROLE</h2>
-        <p id="status">Aguardando operações…</p>
-
-        <button id="btnMostrar">Mostrar Pontos</button>
-        <button id="btnEsconder">Ocultar Pontos</button>
-
-        <p><strong>Clima atual:</strong> <span id="climaTxt">Claro</span></p>
+    <div id="top-bar">
+        <button id="btnIniciar">Iniciar Jogo</button>
+        <button id="btnEditarPontos">Modificar Pontos</button>
+        <button id="btnSalvarPontos" style="display:none;">Salvar Pontos</button>
     </div>
 
-    <!-- Canvas -->
-    <canvas id="canvas" width="1366" height="786"></canvas>
+    <canvas id="canvas" width="1366" height="768"></canvas>
 
     <script src="script.js"></script>
 </body>

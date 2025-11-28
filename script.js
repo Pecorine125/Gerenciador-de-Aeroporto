@@ -1,235 +1,147 @@
-// ============================
-// CONFIGURAÇÃO DO CANVAS
-// ============================
+// ========================
+// CONFIGURAÇÃO INICIAL
+// ========================
+
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// ============================
-// CONTROLES
-// ============================
-let mostrarPontos = false;
+let background = new Image();
+background.src = "https://raw.githubusercontent.com/Pecorine125/Gerenciador-de-Aeroporto/main/assets/cenario.png";
 
-document.getElementById("btnMostrar").onclick = () => mostrarPontos = true;
-document.getElementById("btnEsconder").onclick = () => mostrarPontos = false;
+let EDITANDO = false;
+let pontos = {};
+let pontosLista = [];
+let indiceEdicao = 0;
 
-// ============================
-// CLIMA
-// ============================
-const estadosClima = ["Claro", "Chuva", "Neblina"];
-let climaAtual = 0;
-
-function atualizarClima() {
-    climaAtual = Math.floor(Math.random() * estadosClima.length);
-    document.getElementById("climaTxt").textContent = estadosClima[climaAtual];
-}
-setInterval(atualizarClima, 15000);
-
-// ============================
-// ÁREAS DO CENÁRIO (1366x786)
-// ============================
-
-// PISTA DE POUSO (horizontal esquerda)
-const pontoEntrada = { x: 80, y: 380 };
-
-// Ponto onde avião deve parar após pouso
-const fimPouso = { x: 350, y: 380 };
-
-// Pistas, vagas e taxiamento
-const vagas = [
-    { x: 500, y: 500, ocupada: false },
-    { x: 600, y: 500, ocupada: false },
-    { x: 700, y: 500, ocupada: false },
-    { x: 800, y: 500, ocupada: false },
-    { x: 900, y: 500, ocupada: false }
+// Lista oficial de pontos editáveis
+const nomePontos = [
+    "pousoInicio",
+    "pousoFim",
+    "decolagemInicio",
+    "decolagemFim",
+    "rebocador1Base",
+    "rebocador2Base",
+    "rebocador1Busca",
+    "rebocador2Busca",
+    "rebocador1Entrega",
+    "rebocador2Entrega",
+    "roboBase",
+    "pontoAbastecimento",
+    "vaga1",
+    "vaga2",
+    "vaga3",
+    "vaga4",
+    "vaga5"
 ];
 
-// Ponto de decolagem (lado direito)
-const pistaDecolagem = { x: 1250, y: 380 };
 
-// Base dos rebocadores
-const baseRebocador = { x: 1150, y: 650 };
+// ========================
+// CARREGAR PONTOS.JSON
+// ========================
+async function carregarPontos() {
+    const resp = await fetch("pontos.json");
+    pontos = await resp.json();
 
-// Base do robô de abastecimento
-const baseRobo = { x: 1050, y: 650 };
+    // Transformar vagas[] em vagas individuais
+    pontos.vaga1 = pontos.vagas[0];
+    pontos.vaga2 = pontos.vagas[1];
+    pontos.vaga3 = pontos.vagas[2];
+    pontos.vaga4 = pontos.vagas[3];
+    pontos.vaga5 = pontos.vagas[4];
 
-// ============================
-// OBJETOS DO JOGO
-// ============================
-class Entidade {
-    constructor(x, y, icon, velocidade) {
-        this.x = x;
-        this.y = y;
-        this.icon = icon;
-        this.vel = velocidade;
-        this.raio = 18; // Para colisão
-    }
-
-    moverPara(px, py) {
-        const dx = px - this.x;
-        const dy = py - this.y;
-        const dist = Math.hypot(dx, dy);
-
-        if (dist > 2) {
-            this.x += (dx / dist) * this.vel;
-            this.y += (dy / dist) * this.vel;
-        }
-    }
-
-    desenhar() {
-        ctx.font = "28px Arial";
-        ctx.fillText(this.icon, this.x, this.y);
-    }
+    delete pontos.vagas;
 }
 
-// ============================
-// AVIÕES
-// ============================
+carregarPontos();
 
-function gerarAviao() {
-    const tipo = Math.floor(Math.random() * 3);
 
-    if (tipo === 0)
-        return new Entidade(pontoEntrada.x, pontoEntrada.y, "✈️", 1.0); // Grande
-    if (tipo === 1)
-        return new Entidade(pontoEntrada.x, pontoEntrada.y, "🛩️", 1.8); // Médio
-
-    return new Entidade(pontoEntrada.x, pontoEntrada.y, "🛫", 2.5); // Pequeno
-}
-
-let aviaoAtual = null;
-let aviõesRestantes = 5;
-
-// ============================
-// REBOCADORES
-// ============================
-const rebocador1 = new Entidade(baseRebocador.x, baseRebocador.y, "🚜", 2);
-const rebocador2 = new Entidade(baseRebocador.x - 30, baseRebocador.y, "🚜", 2);
-
-// ============================
-// ROBÔ DE COMBUSTÍVEL
-// ============================
-const roboCombustivel = new Entidade(baseRobo.x, baseRobo.y, "🤖", 2);
-
-// ============================
-// TORRE DE CONTROLE
-// ============================
-
-let estado = "AGUARDANDO_AVIAO";
-let vagaAtual = null;
-let abastecendo = false;
-
-function torre() {
-
-    switch (estado) {
-
-        case "AGUARDANDO_AVIAO":
-            if (aviõesRestantes > 0) {
-                aviaoAtual = gerarAviao();
-                aviõesRestantes--;
-                estado = "POUSANDO";
-                atualizarStatus("Avião pousando…");
-            }
-            break;
-
-        case "POUSANDO":
-            aviaoAtual.moverPara(fimPouso.x, fimPouso.y);
-
-            if (dist(aviaoAtual, fimPouso) < 10) {
-                atualizarStatus("Rebocador 1 indo buscar avião.");
-                vagaAtual = vagas.find(v => !v.ocupada);
-                vagaAtual.ocupada = true;
-                estado = "REBOQUE_ENTRADA";
-            }
-            break;
-
-        case "REBOQUE_ENTRADA":
-            rebocador1.moverPara(aviaoAtual.x, aviaoAtual.y);
-
-            if (dist(rebocador1, aviaoAtual) < 10) {
-                estado = "LEVANDO_VAGA";
-                atualizarStatus("Rebocando até a vaga…");
-            }
-            break;
-
-        case "LEVANDO_VAGA":
-            aviaoAtual.moverPara(vagaAtual.x, vagaAtual.y);
-            rebocador1.moverPara(vagaAtual.x, vagaAtual.y);
-
-            if (dist(aviaoAtual, vagaAtual) < 10) {
-                estado = "ABASTECER";
-                atualizarStatus("Robô indo abastecer…");
-            }
-            break;
-
-        case "ABASTECER":
-            roboCombustivel.moverPara(aviaoAtual.x, aviaoAtual.y);
-
-            if (!abastecendo && dist(roboCombustivel, aviaoAtual) < 15) {
-                abastecendo = true;
-                atualizarStatus("Abastecendo (3s)…");
-
-                setTimeout(() => {
-                    abastecendo = false;
-                    estado = "REBOQUE_SAIDA";
-                    atualizarStatus("Rebocador 2 levando para decolagem");
-                }, 3000);
-            }
-            break;
-
-        case "REBOQUE_SAIDA":
-            rebocador2.moverPara(aviaoAtual.x, aviaoAtual.y);
-
-            if (dist(rebocador2, aviaoAtual) < 10) {
-                estado = "PARA_PISTA";
-            }
-            break;
-
-        case "PARA_PISTA":
-            aviaoAtual.moverPara(pistaDecolagem.x, pistaDecolagem.y);
-            rebocador2.moverPara(pistaDecolagem.x, pistaDecolagem.y);
-
-            if (dist(aviaoAtual, pistaDecolagem) < 10) {
-                estado = "DECOLANDO";
-                atualizarStatus("Avião decolando ➜");
-            }
-            break;
-
-        case "DECOLANDO":
-            aviaoAtual.x += 6;
-
-            if (aviaoAtual.x > 1400) {
-                estado = "AGUARDANDO_AVIAO";
-            }
-            break;
-    }
-}
-
-// ============================
-// SISTEMA DE COLISÃO
-// ============================
-function dist(a, b) {
-    return Math.hypot(a.x - b.x, a.y - b.y);
-}
-
-// ============================
-// LOOP DO JOGO
-// ============================
+// ========================
+// DESENHO PRINCIPAL
+// ========================
 function loop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
-    torre();
-
-    if (aviaoAtual) aviaoAtual.desenhar();
-    rebocador1.desenhar();
-    rebocador2.desenhar();
-    roboCombustivel.desenhar();
+    if (EDITANDO) desenharPontos();
 
     requestAnimationFrame(loop);
 }
 
 loop();
 
-// ============================
-function atualizarStatus(msg) {
-    document.getElementById("status").textContent = msg;
+
+// ========================
+// EDITOR DE PONTOS
+// ========================
+function iniciarEdicao() {
+    EDITANDO = true;
+    indiceEdicao = 0;
+    pontosLista = {};
+
+    alert("Modo edição ativado! Clique no mapa para definir: " + nomePontos[indiceEdicao]);
+    document.getElementById("btnSalvarPontos").style.display = "block";
 }
+
+function desenharPontos() {
+    ctx.fillStyle = "red";
+    ctx.font = "18px Arial";
+
+    for (const nome in pontosLista) {
+        const p = pontosLista[nome];
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillText(nome, p.x + 10, p.y - 10);
+    }
+}
+
+canvas.addEventListener("click", function (e) {
+    if (!EDITANDO) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const nome = nomePontos[indiceEdicao];
+    pontosLista[nome] = { x, y };
+
+    indiceEdicao++;
+
+    if (indiceEdicao < nomePontos.length) {
+        alert("Defina agora: " + nomePontos[indiceEdicao]);
+    } else {
+        alert("Todos os pontos definidos! Clique em SALVAR.");
+    }
+});
+
+
+// ========================
+// SALVAR NO GITHUB
+// ========================
+async function salvarPontosNoGithub() {
+    let salvar = {};
+
+    for (const nome of nomePontos) {
+        salvar[nome] = pontosLista[nome];
+    }
+
+    const resposta = await fetch("/api/salvarPontos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pontos: salvar })
+    });
+
+    const dados = await resposta.json();
+
+    alert("Pontos salvos com sucesso no GitHub!");
+
+    EDITANDO = false;
+    document.getElementById("btnSalvarPontos").style.display = "none";
+}
+
+
+// ========================
+// BOTÕES
+// ========================
+document.getElementById("btnEditarPontos").onclick = iniciarEdicao;
+document.getElementById("btnSalvarPontos").onclick = salvarPontosNoGithub;

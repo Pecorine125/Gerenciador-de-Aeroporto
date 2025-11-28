@@ -1,12 +1,27 @@
 {
-    "pousoInicio": { "x": 0, "y": 0 },
-    "pousoFim": { "x": 0, "y": 0 },
-    "decolagemInicio": { "x": 0, "y": 0 },
-    "decolagemFim": { "x": 0, "y": 0 },
-    "rebocadorBase1": { "x": 0, "y": 0 },
-    "rebocadorBase2": { "x": 0, "y": 0 },
-    "rebocadorBusca": { "x": 0, "y": 0 },
-    "rebocadorEntrega": { "x": 0, "y": 0 },
-    "roboBase": { "x": 0, "y": 0 },
-    "vagas": []
+    "pousoInicio": { "x": 200, "y": 100 },
+    "pousoFim": { "x": 500, "y": 100 },
+
+    "decolagemInicio": { "x": 1100, "y": 600 },
+    "decolagemFim": { "x": 1350, "y": 600 },
+
+    "rebocador1Base": { "x": 100, "y": 700 },
+    "rebocador2Base": { "x": 160, "y": 700 },
+
+    "rebocador1Busca": { "x": 600, "y": 300 },
+    "rebocador2Busca": { "x": 650, "y": 300 },
+
+    "rebocador1Entrega": { "x": 1150, "y": 620 },
+    "rebocador2Entrega": { "x": 1200, "y": 620 },
+
+    "roboBase": { "x": 250, "y": 700 },
+    "pontoAbastecimento": { "x": 700, "y": 350 },
+
+    "vagas": [
+        { "x": 800, "y": 500 },
+        { "x": 900, "y": 500 },
+        { "x": 1000, "y": 500 },
+        { "x": 1100, "y": 500 },
+        { "x": 1200, "y": 500 }
+    ]
 }
