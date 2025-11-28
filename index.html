@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Simulador de Aeroporto</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Fundo do CANVA sem baixar -->
+    <img id="bg"
+         src="https://www.canva.com/design/DAG58OCQCWM/OfblCfNNWJlEfFDKcf9tsA/view?embed"
+         alt="Cenário do aeroporto">
+
+    <!-- Painel -->
+    <div id="painel">
+        <h2>TORRE DE CONTROLE</h2>
+        <p id="status">Aguardando operações…</p>
+
+        <button id="btnMostrar">Mostrar Pontos</button>
+        <button id="btnEsconder">Ocultar Pontos</button>
+
+        <p><strong>Clima atual:</strong> <span id="climaTxt">Claro</span></p>
+    </div>
+
+    <!-- Canvas -->
+    <canvas id="canvas" width="1366" height="786"></canvas>
+
+    <script src="script.js"></script>
+
+</body>
+</html>
