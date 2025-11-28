@@ -1,0 +1,47 @@
+body {
+    margin: 0;
+    overflow: hidden;
+    background: #000;
+}
+
+#bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1366px;
+    height: 786px;
+    z-index: -1;
+}
+
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#painel {
+    position: absolute;
+    left: 10px;
+    top: 10px;
+    background: rgba(20,20,20,0.7);
+    padding: 15px;
+    border-radius: 8px;
+    color: #fff;
+    font-family: sans-serif;
+    width: 250px;
+}
+
+button {
+    width: 100%;
+    margin-top: 8px;
+    padding: 8px;
+    border: none;
+    background: #2980b9;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+button:hover {
+    background: #3498db;
+}
