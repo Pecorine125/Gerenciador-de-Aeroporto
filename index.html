@@ -9,19 +9,21 @@
 <body>
     <h1>Gerenciador de Aeroporto</h1>
 
-    <div id="game-area">
-        <div id="runway"></div>
-
-        <div id="plane"></div>
-        <div id="tug1" class="tug"></div>
-        <div id="tug2" class="tug"></div>
-        <div id="robot"></div>
+    <div id="panel">
+        <button id="btn-authorize">Autorizar Próximo Pouso</button>
+        <div id="queue"></div>
     </div>
 
-    <button id="btn-land">Autorizar Pouso</button>
-    <button id="btn-refuel">Reabastecer</button>
-    <button id="btn-move-to-gate">Rebocar para Gate</button>
-    <button id="btn-takeoff">Enviar para Decolagem</button>
+    <div id="game-area">
+        <div id="runway"></div>
+        <div id="taxiway"></div>
+
+        <div id="robot" class="robot"></div>
+        <div id="tug1" class="tug"></div>
+        <div id="tug2" class="tug"></div>
+
+        <div id="planes-container"></div>
+    </div>
 
     <script src="script.js"></script>
 </body>
