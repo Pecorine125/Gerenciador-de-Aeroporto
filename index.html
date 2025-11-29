@@ -140,11 +140,7 @@ const tow1 = new Tow(1); const tow2 = new Tow(2); const robot = new Robot();
 // Tower logic
 function spawnPlane(){ const p = new Plane(); p.state='waiting'; requests.push(p); entities.push(p); updateUI(); }
 
-function authorizeLanding(plane){ if(plane.state!=='waiting') return; plane.state='landing'; plane.path = screenPath(map.runway.concat(map.taxiToGate)); plane.wpIndex=0; // After landing, schedule tow fetch automatically
-  // schedule tow1 to fetch when plane is parked
-}
-
-function updateUI(){ const reqBox = document.getElementById('requests'); reqBox.innerHTML=''; requests.forEach(p=>{
+function authorizeLanding(plane){ if(plane.state!=='waiting') return; plane.state='landing'; plane.path = screenPath(map.runway.concat(map.taxiToGate)); plane.wpIndex=0; requests = requests.filter(p=>p.id!==plane.id); updateUI(){ const reqBox = document.getElementById('requests'); reqBox.innerHTML=''; requests.forEach(p=>{
   const div = document.createElement('div'); div.style.margin='6px 0'; div.innerHTML = `Avião <strong>A${p.id}</strong> — estado: ${p.state} `;
   const btn = document.createElement('button'); btn.textContent='Autorizar'; btn.onclick = ()=>{ authorizeLanding(p); updateUI(); };
   div.appendChild(btn); reqBox.appendChild(div);
