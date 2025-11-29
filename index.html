@@ -1,12 +1,217 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<title>Gerenciador de Aeroporto</title>
-<link rel="stylesheet" href="style.css">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Airport Manager — HTML/CSS/JS</title>
+  <style>
+    :root{--bg:#87CEEB;--tarmac:#2f2f2f;--taxi:#c9a85b;--grass:#7fb26f}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Arial}
+    .wrap{display:grid;grid-template-columns:1fr 320px;gap:12px;height:100vh;padding:12px;background:linear-gradient(#bfe8ff, #eaf7ff)}
+    canvas{background:linear-gradient(#6fb0ff,#d0f0ff);display:block;width:100%;height:100%;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.15)}
+    .panel{background:#fff;border-radius:8px;padding:12px;box-shadow:0 6px 18px rgba(0,0,0,.06);overflow:auto}
+    h2{margin:4px 0 8px;font-size:16px}
+    button{display:inline-block;margin:6px 6px 6px 0;padding:8px 10px;border-radius:6px;border:1px solid #ddd;background:#fafafa;cursor:pointer}
+    .plane-list{margin-top:8px}
+    .row{display:flex;gap:8px;align-items:center}
+    .status{font-size:13px;color:#444}
+    .legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .legend div{padding:6px 8px;border-radius:6px;border:1px solid #eee}
+    small{color:#666}
+  </style>
 </head>
 <body>
-<canvas id="game" width="1366" height="768"></canvas>
-<script src="game.js"></script>
+  <div class="wrap">
+    <div>
+      <canvas id="game"></canvas>
+    </div>
+    <aside class="panel">
+      <h2>Controle da Torre</h2>
+      <div class="row">
+        <button id="startBtn">Iniciar</button>
+        <button id="spawnBtn">Gerar avião</button>
+        <button id="fastBtn">Vel. x2</button>
+      </div>
+      <div class="status"><strong>Tempo:</strong> <span id="time">0</span>s — <strong>Ativos:</strong> <span id="active">0</span></div>
+      <h2>Fila de Pedidos</h2>
+      <div id="requests" class="plane-list"></div>
+
+      <h2>Unidades de Solo</h2>
+      <div class="legend">
+        <div>✈️ Aviões</div>
+        <div>🚚 Rebocador (buscar)</div>
+        <div>🚛 Rebocador (pista)</div>
+        <div>🤖 Robô (abastecer)</div>
+      </div>
+      <h2>Como jogar</h2>
+      <ol>
+        <li>Clique <strong>Iniciar</strong>.</li>
+        <li>Quando um avião solicitar pouso, clique <strong>Autorizar</strong>.</li>
+        <li>Após pouso, rebocador 1 irá buscá-lo e levá-lo ao gate; robô fará reabastecimento; rebocador 2 levará à pista.</li>
+      </ol>
+      <small>Este projeto usa Canvas 2D e caminhos predefinidos (taxiways). Todos os veículos seguem somente as pistas/taxiways.</small>
+    </aside>
+  </div>
+
+<script>
+// Airport Manager — Single-file HTML/CSS/JS
+// Versão simplificada: aviões solicitam pouso, torre autoriza, rebocador1 busca, robô abastece, rebocador2 leva à pista.
+
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+let W, H;
+function resize(){canvas.width = canvas.clientWidth * devicePixelRatio; canvas.height = canvas.clientHeight * devicePixelRatio; W = canvas.width; H = canvas.height; ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+new ResizeObserver(resize).observe(canvas);
+
+// Utility
+function dist(a,b){const dx=a.x-b.x, dy=a.y-b.y; return Math.hypot(dx,dy)}
+function lerp(a,b,t){return {x:a.x+(b.x-a.x)*t, y:a.y+(b.y-a.y)*t}}
+
+// Map: define waypoints for taxiways (relative coordinates 0..1)
+const map = {
+  runway: [{x:.1,y:.2},{x:.9,y:.2}],
+  taxiToGate: [{x:.9,y:.2},{x:.75,y:.35},{x:.6,y:.35},{x:.5,y:.45},{x:.4,y:.45}],
+  gateParking: [{x:.4,y:.45},{x:.35,y:.6},{x:.3,y:.7}],
+  gateExitToRunway: [{x:.3,y:.7},{x:.45,y:.6},{x:.6,y:.5},{x:.75,y:.35},{x:.9,y:.2}],
+  towFetchPath: [{x:.85,y:.25},{x:.7,y:.35},{x:.55,y:.42},{x:.42,y:.47}],
+  towToGatePath: [{x:.42,y:.47},{x:.36,y:.6},{x:.3,y:.7}],
+  towToRunwayPath: [{x:.3,y:.7},{x:.45,y:.6},{x:.6,y:.5},{x:.75,y:.35},{x:.9,y:.2}]
+};
+
+// Convert to screen coords
+function screenPoint(p){return {x: p.x*canvas.clientWidth, y: p.y*canvas.clientHeight}}
+function screenPath(path){return path.map(screenPoint)}
+
+// Entities
+let entities = [];
+let requests = [];
+let time = 0; let running = false; let speedMult = 1;
+let planeCounter = 0;
+
+class Plane{
+  constructor(){
+    this.id = ++planeCounter;
+    this.color = '#00497a';
+    this.state = 'waiting'; // waiting (approach), landing, taxiing, parked, serviced, waiting_takeoff, departing
+    this.pos = {x: canvas.clientWidth * .95, y: canvas.clientHeight * .15};
+    this.path = screenPath(map.runway.concat(map.taxiToGate));
+    this.wpIndex = 0;
+    this.speed = 80; // px/s
+    this.hooked = false;
+    this.gatePoint = screenPoint(map.gateParking[2]);
+  }
+  update(dt){
+    if(this.state === 'landing' || this.state === 'taxiing' || this.state==='departing'){
+      const target = this.path[this.wpIndex] || this.gatePoint;
+      const d = dist(this.pos,target);
+      if(d<2){ this.wpIndex++; if(this.wpIndex>=this.path.length){
+        if(this.state==='landing'){ this.state='taxiing'; this.path = screenPath(map.taxiToGate.concat(map.gateParking)); this.wpIndex=0 }
+        else if(this.state==='taxiing'){ this.state='parked'; this.pos = this.gatePoint }
+        else if(this.state==='departing'){ this.state='gone'; }
+      }} else {
+        const step = (this.speed * dt * speedMult) / d;
+        this.pos = lerp(this.pos,target, Math.min(1,step));
+      }
+    }
+  }
+  draw(ctx){ ctx.save(); ctx.translate(this.pos.x,this.pos.y); ctx.rotate(0);
+    ctx.fillStyle = this.color; ctx.beginPath(); ctx.moveTo(-10,-6); ctx.lineTo(10,0); ctx.lineTo(-10,6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#000'; ctx.font='11px sans-serif'; ctx.fillText('A'+this.id, -14, -10);
+    ctx.restore(); }
+}
+
+class Tow{
+  constructor(type){ this.type=type; this.pos = screenPoint({x:.65,y:.3}); this.path=[]; this.wpIndex=0; this.speed=120; this.color = type===1? '#b04b00' : '#006b2f'; this.busy=false }
+  assignPath(path){ this.path = screenPath(path); this.wpIndex=0; this.busy=true }
+  update(dt){ if(!this.busy) return; const target = this.path[this.wpIndex]; if(!target){ this.busy=false; return } const d=dist(this.pos,target); if(d<3){ this.wpIndex++; if(this.wpIndex>=this.path.length){ this.busy=false } } else { const step=(this.speed*dt*speedMult)/d; this.pos = lerp(this.pos,target,Math.min(1,step)); }}
+  draw(ctx){ ctx.save(); ctx.translate(this.pos.x,this.pos.y); ctx.fillStyle=this.color; ctx.fillRect(-8,-6,16,12); ctx.fillStyle='#000'; ctx.fillText(this.type===1? 'R1':'R2', -8, -10); ctx.restore(); }
+}
+
+class Robot{
+  constructor(){ this.pos = screenPoint({x:.34,y:.63}); this.busy=false; this.color='#3333aa'; this.speed=60 }
+  goTo(pt){ this.target = pt; this.busy=true }
+  update(dt){ if(!this.busy) return; const d=dist(this.pos,this.target); if(d<3){ this.busy=false } else { const step=(this.speed*dt*speedMult)/d; this.pos=lerp(this.pos,this.target,Math.min(1,step)) }}
+  draw(ctx){ ctx.save(); ctx.translate(this.pos.x,this.pos.y); ctx.beginPath(); ctx.arc(0,0,8,0,Math.PI*2); ctx.fillStyle=this.color; ctx.fill(); ctx.fillStyle='#fff'; ctx.fillText('R', -4,4); ctx.restore(); }
+}
+
+// Units
+const tow1 = new Tow(1); const tow2 = new Tow(2); const robot = new Robot();
+
+// Tower logic
+function spawnPlane(){ const p = new Plane(); p.state='waiting'; requests.push(p); entities.push(p); updateUI(); }
+
+function authorizeLanding(plane){ if(plane.state!=='waiting') return; plane.state='landing'; plane.path = screenPath(map.runway.concat(map.taxiToGate)); plane.wpIndex=0; // After landing, schedule tow fetch automatically
+  // schedule tow1 to fetch when plane is parked
+}
+
+function updateUI(){ const reqBox = document.getElementById('requests'); reqBox.innerHTML=''; requests.forEach(p=>{
+  const div = document.createElement('div'); div.style.margin='6px 0'; div.innerHTML = `Avião <strong>A${p.id}</strong> — estado: ${p.state} `;
+  const btn = document.createElement('button'); btn.textContent='Autorizar'; btn.onclick = ()=>{ authorizeLanding(p); updateUI(); };
+  div.appendChild(btn); reqBox.appendChild(div);
+}); document.getElementById('active').textContent = entities.filter(e=>e instanceof Plane && e.state!=='gone').length }
+
+// Automatic ground coordination: monitor plane states and dispatch tow/robot
+function groundControl(){ // If plane parked and not yet hooked, dispatch tow1 to fetch
+  entities.filter(e=>e instanceof Plane).forEach(p=>{
+    if(p.state==='parked' && !p.hooked){ // dispatch tow1 to plane
+      p.hooked = true; // prevent multiple dispatch
+      tow1.assignPath(map.towFetchPath.concat(map.towToGatePath));
+      // simulate tow arrival: after tow to gate complete, mark plane serviced and start robot
+      setTimeout(()=>{
+        p.state='serviced';
+        // robot to plane
+        robot.goTo(screenPoint(map.gateParking[2]));
+        // after robot finishes refuel, schedule tow2 to runway
+        setTimeout(()=>{
+          p.state='waiting_takeoff';
+          tow2.assignPath(map.towToRunwayPath);
+          // when tow2 completes, plane departs
+          setTimeout(()=>{ p.state='departing'; p.path = screenPath(map.runway.concat([{x:.95,y:.2}])); p.wpIndex=0; }, 3000);
+        }, 3500);
+      }, 2500);
+    }
+  });
+}
+
+// Draw map
+function drawMap(){ const rw = screenPath(map.runway); ctx.save(); // grass
+  ctx.fillStyle='#7fb26f'; ctx.fillRect(0,0,canvas.clientWidth,canvas.clientHeight);
+  // runway
+  ctx.fillStyle='#2f2f2f'; const r0 = rw[0], r1=rw[1]; const rwW=60; ctx.beginPath(); ctx.rect(r0.x, r0.y - rwW/2, r1.x - r0.x, rwW); ctx.fill();
+  // centerline
+  ctx.strokeStyle='#fff'; ctx.setLineDash([12,14]); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(r0.x, r0.y); ctx.lineTo(r1.x, r1.y); ctx.stroke(); ctx.setLineDash([]);
+  // taxiways
+  ctx.fillStyle='#c9a85b88'; const paths = [map.taxiToGate, map.gateParking, map.towFetchPath, map.towToGatePath, map.towToRunwayPath]; paths.forEach(p=>{ const s=screenPath(p); ctx.beginPath(); ctx.moveTo(s[0].x, s[0].y); for(let i=1;i<s.length;i++) ctx.lineTo(s[i].x,s[i].y); ctx.lineWidth=20; ctx.strokeStyle='#b8a35e'; ctx.stroke(); });
+  // gates
+  const gp = screenPoint(map.gateParking[2]); ctx.fillStyle='#d9d9d9'; ctx.fillRect(gp.x-24,gp.y-16,48,32); ctx.fillStyle='#000'; ctx.fillText('Gate', gp.x-18, gp.y-22);
+  ctx.restore(); }
+
+// Main loop
+let last = performance.now(); function loop(now){ const dt = (now-last)/1000; last=now; if(running){ time+=dt*speedMult; document.getElementById('time').textContent = Math.floor(time); // update
+    // update entities
+    entities.forEach(e=>{ if(typeof e.update==='function') e.update(dt); }); tow1.update(dt); tow2.update(dt); robot.update(dt);
+    // ground control checks
+    groundControl();
+    // cleanup departed
+    entities = entities.filter(e=>!(e instanceof Plane && e.state==='gone'));
+  }
+  // render
+  ctx.clearRect(0,0,canvas.clientWidth,canvas.clientHeight);
+  drawMap(); entities.forEach(e=>{ if(typeof e.draw==='function') e.draw(ctx); }); tow1.draw(ctx); tow2.draw(ctx); robot.draw(ctx);
+  updateUI(); requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// UI
+document.getElementById('startBtn').addEventListener('click', ()=>{ running = !running; document.getElementById('startBtn').textContent = running? 'Pausar' : 'Iniciar'; if(running) last = performance.now(); });
+document.getElementById('spawnBtn').addEventListener('click', ()=>{ spawnPlane(); });
+document.getElementById('fastBtn').addEventListener('click', ()=>{ speedMult = speedMult===1?2:1; document.getElementById('fastBtn').textContent = speedMult===1? 'Vel. x2' : 'Vel. x1'; });
+
+// Auto spawn occasionally
+setInterval(()=>{ if(running && Math.random()<0.35) spawnPlane(); }, 5000);
+
+// initial
+resize();
+</script>
 </body>
 </html>
