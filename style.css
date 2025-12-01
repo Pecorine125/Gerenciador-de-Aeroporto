@@ -1,0 +1,51 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #87CEEB;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+h1 {
+  color: #003366;
+}
+
+.stats {
+  background: #fff;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.runway {
+  background: #555;
+  height: 60px;
+  border-radius: 4px;
+  position: relative;
+  margin: 20px 0;
+}
+
+.air-space {
+  min-height: 200px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 8px;
+  padding: 10px;
+  margin-top: 20px;
+}
+
+.plane {
+  position: absolute;
+  font-size: 24px;
+  transition: all 3s linear;
+}
+
+.waiting-plane {
+  display: inline-block;
+  margin: 10px;
+  font-size: 20px;
+}
