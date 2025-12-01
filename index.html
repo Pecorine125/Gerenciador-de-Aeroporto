@@ -26,48 +26,59 @@
       </div>
     </div>
 
-    <div class="runway landing" id="landingRunway">
-      <div class="label">🛬 POUSO</div>
+    <!-- Pista de Pouso (1 célula) -->
+    <div class="path-row">
+      <div class="cell runway" id="landingCell">🛬</div>
     </div>
 
-    <div class="taxiway"></div>
-
-    <div class="parking-level">
-      <div class="parking-row" id="upperParking">
-        <div class="spot" data-id="U1"></div>
-        <div class="spot" data-id="U2"></div>
-        <div class="spot" data-id="U3"></div>
-        <div class="spot" data-id="U4"></div>
-        <div class="spot" data-id="U5"></div>
-        <div class="spot" data-id="U6"></div>
-        <div class="spot" data-id="U7"></div>
-        <div class="spot" data-id="U8"></div>
-        <div class="spot" data-id="U9"></div>
-        <div class="spot" data-id="U10"></div>
-      </div>
+    <!-- Taxiway de Entrada (3 células) -->
+    <div class="path-row">
+      <div class="cell taxi" id="taxiIn1"></div>
+      <div class="cell taxi" id="taxiIn2"></div>
+      <div class="cell taxi" id="taxiIn3"></div>
     </div>
 
-    <div class="parking-level">
-      <div class="parking-row" id="lowerParking">
-        <div class="spot" data-id="L1"></div>
-        <div class="spot" data-id="L2"></div>
-        <div class="spot" data-id="L3"></div>
-        <div class="spot" data-id="L4"></div>
-        <div class="spot" data-id="L5"></div>
-        <div class="spot" data-id="L6"></div>
-        <div class="spot" data-id="L7"></div>
-        <div class="spot" data-id="L8"></div>
-        <div class="spot" data-id="L9"></div>
-        <div class="spot" data-id="L10"></div>
-      </div>
+    <!-- Vagas Superiores -->
+    <div class="path-row">
+      <div class="cell gate" data-id="U1"></div>
+      <div class="cell gate" data-id="U2"></div>
+      <div class="cell gate" data-id="U3"></div>
+      <div class="cell gate" data-id="U4"></div>
+      <div class="cell gate" data-id="U5"></div>
+      <div class="cell gate" data-id="U6"></div>
+      <div class="cell gate" data-id="U7"></div>
+      <div class="cell gate" data-id="U8"></div>
+      <div class="cell gate" data-id="U9"></div>
+      <div class="cell gate" data-id="U10"></div>
     </div>
 
-    <div class="taxiway"></div>
-
-    <div class="runway takeoff" id="takeoffRunway">
-      <div class="label">🛫 DECOLAGEM</div>
+    <!-- Vagas Inferiores -->
+    <div class="path-row">
+      <div class="cell gate" data-id="L1"></div>
+      <div class="cell gate" data-id="L2"></div>
+      <div class="cell gate" data-id="L3"></div>
+      <div class="cell gate" data-id="L4"></div>
+      <div class="cell gate" data-id="L5"></div>
+      <div class="cell gate" data-id="L6"></div>
+      <div class="cell gate" data-id="L7"></div>
+      <div class="cell gate" data-id="L8"></div>
+      <div class="cell gate" data-id="L9"></div>
+      <div class="cell gate" data-id="L10"></div>
     </div>
 
+    <!-- Taxiway de Saída (3 células) -->
+    <div class="path-row">
+      <div class="cell taxi" id="taxiOut1"></div>
+      <div class="cell taxi" id="taxiOut2"></div>
+      <div class="cell taxi" id="taxiOut3"></div>
+    </div>
+
+    <!-- Pista de Decolagem -->
+    <div class="path-row">
+      <div class="cell runway takeoff" id="takeoffCell">🛫</div>
+    </div>
+
+    <!-- Upgrades -->
     <div class="upgrades">
       <h3>⚙️ Melhorias</h3>
       <button id="upgradeRefuel">Acelerar Reabastecimento (50💰)</button>
