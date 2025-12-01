@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>✈️ Airport City Lite</title>
+  <title>✈️ Airport City - Layout U</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="sky"></div>
   <div class="game-container">
-    <h1>✈️ Airport City</h1>
+    <h1>✈️ Airport City - Layout U</h1>
 
     <!-- Recursos -->
     <div class="resources">
@@ -18,30 +18,45 @@
       <div class="res">🏢 Nível Terminal: <span id="terminalLevel">1</span></div>
     </div>
 
-    <!-- Cenário do aeroporto -->
-    <div class="airport-scene">
-      <!-- Pistas (até 2) -->
-      <div class="runways-container" id="runwaysContainer">
-        <div class="runway" id="runway1">✈️ PISTA 1</div>
+    <!-- Cenário do aeroporto (layout U) -->
+    <div class="airport-layout">
+      <!-- Pista Superior -->
+      <div class="runway-top" id="runwayTop">
+        <div class="runway-label">Pouso</div>
       </div>
 
-      <!-- Terminal -->
-      <div class="terminal" id="terminal">
-        <div class="terminal-level">NÍVEL <span id="terminalLevelDisplay">1</span></div>
-        <div class="terminal-content" id="terminalContent"></div>
+      <!-- Taxiway Esquerda -->
+      <div class="taxi-left" id="taxiLeft"></div>
+
+      <!-- Terminal com 6 vagas -->
+      <div class="terminal-row">
+        <div class="gate" data-id="G1"></div>
+        <div class="gate" data-id="G2"></div>
+        <div class="gate" data-id="G3"></div>
+        <div class="gate" data-id="G4"></div>
+        <div class="gate" data-id="G5"></div>
+        <div class="gate" data-id="G6"></div>
       </div>
 
-      <!-- Botões de upgrade -->
-      <div class="upgrades">
-        <button id="buyRunway">Comprar 2ª Pista (3000💰)</button>
-        <button id="upgradeTerminal">Melhorar Terminal (2000💰)</button>
+      <!-- Taxiway Direita -->
+      <div class="taxi-right" id="taxiRight"></div>
+
+      <!-- Pista Inferior -->
+      <div class="runway-bottom" id="runwayBottom">
+        <div class="runway-label">Decolagem</div>
       </div>
     </div>
 
-    <!-- Aviões no ar (fila visual) -->
+    <!-- Botões de upgrade -->
+    <div class="upgrades">
+      <button id="buyRunway">Comprar 2ª Pista (3000💰)</button>
+      <button id="upgradeTerminal">Melhorar Terminal (2000💰)</button>
+    </div>
+
+    <!-- Aviões no ar -->
     <div class="sky-queue" id="skyQueue"></div>
 
-    <!-- Nuvens decorativas -->
+    <!-- Nuvens -->
     <div class="cloud c1">☁️</div>
     <div class="cloud c2">☁️</div>
     <div class="cloud c3">☁️</div>

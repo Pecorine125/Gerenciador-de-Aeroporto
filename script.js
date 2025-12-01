@@ -1,56 +1,65 @@
 // === Estado do Jogo ===
 let money = 500;
-let runways = 1; // máximo = 2
-let terminalLevel = 1; // nível 1, 2 ou 3
+let runways = 1; // máximo 2
+let terminalLevel = 1; // 1, 2, 3
 let planesInAir = [];
 let nextPlaneId = 1;
 let goldenPlaneUnlocked = false;
 
-// Atualiza interface
+// Vagas
+const gateIds = ['G1','G2','G3','G4','G5','G6'];
+const gates = {};
+gateIds.forEach(id => gates[id] = null);
+
 function updateUI() {
   document.getElementById('money').textContent = money.toLocaleString('pt-BR');
   document.getElementById('runways').textContent = runways;
   document.getElementById('terminalLevel').textContent = terminalLevel;
-  document.getElementById('terminalLevelDisplay').textContent = terminalLevel;
 
-  // Botões desativados se sem dinheiro
+  // Botões
   document.getElementById('buyRunway').disabled = (runways >= 2 || money < 3000);
   document.getElementById('upgradeTerminal').disabled = (terminalLevel >= 3 || money < 2000);
 
-  // Atualiza fila de aviões
+  // Fila de aviões
   const queueEl = document.getElementById('skyQueue');
   queueEl.innerHTML = '';
   planesInAir.forEach(plane => {
     if (!plane.landed) {
       const el = document.createElement('div');
       el.className = 'aircraft-sky';
-      el.innerHTML = `✈️ ${plane.type} →`;
+      el.innerHTML = `✈️ ${plane.type}`;
       queueEl.appendChild(el);
     }
   });
 
-  // Atualiza conteúdo do terminal (aviões estacionados)
-  const terminalContent = document.getElementById('terminalContent');
-  terminalContent.innerHTML = '';
-  const parkedPlanes = planesInAir.filter(p => p.landed && p.at === 'terminal');
-  if (parkedPlanes.length > 0) {
-    const last = parkedPlanes[parkedPlanes.length - 1];
-    terminalContent.textContent = last.type === 'small' ? '✈️' : last.type === 'medium' ? '✈️✈️' : '✈️✈️✈️';
-  }
+  // Atualiza estado das vagas
+  gateIds.forEach(id => {
+    const gateEl = document.querySelector(`.gate[data-id="${id}"]`);
+    if (gates[id]) {
+      gateEl.classList.add('occupied');
+      if (gates[id].status === 'refueling') {
+        gateEl.classList.add('refueling');
+      } else {
+        gateEl.classList.remove('refueling');
+      }
+    } else {
+      gateEl.classList.remove('occupied', 'refueling');
+    }
+  });
 }
 
-// === Tipos de aviões por nível de terminal ===
+// Tipos de avião por nível do terminal
 function getAvailablePlaneTypes() {
   if (terminalLevel >= 3) return ['small', 'medium', 'large'];
   if (terminalLevel >= 2) return ['small', 'medium'];
   return ['small'];
 }
 
-// === Gerar novo avião (a cada 10-20s) ===
+// Gerar novo avião
 function spawnPlane() {
   const types = getAvailablePlaneTypes();
   const type = types[Math.floor(Math.random() * types.length)];
-  
+
   const plane = {
     id: nextPlaneId++,
     type,
@@ -62,62 +71,67 @@ function spawnPlane() {
   planesInAir.push(plane);
   updateUI();
 
-  // Simular pouso (ir para pista)
   setTimeout(() => landPlane(plane), 2000);
 }
 
-// === Pousar avião (vai para terminal) ===
+// Pousar (vai para vaga)
 function landPlane(plane) {
   if (plane.landed) return;
-  
+
+  // Encontrar vaga livre
+  const freeGate = gateIds.find(id => gates[id] === null);
+  if (!freeGate) {
+    // Sem vaga — cancela
+    planesInAir = planesInAir.filter(p => p.id !== plane.id);
+    updateUI();
+    return;
+  }
+
   plane.landed = true;
-  plane.at = 'terminal';
+  plane.at = freeGate;
+  gates[freeGate] = { planeId: plane.id, status: 'parked' };
   updateUI();
 
-  // Reabastecimento
+  // Reabastecer
   setTimeout(() => {
-    if (planesInAir.some(p => p.id === plane.id)) {
-      prepareForTakeoff(plane);
+    if (gates[freeGate] && gates[freeGate].planeId === plane.id) {
+      gates[freeGate].status = 'refueling';
+      updateUI();
+
+      setTimeout(() => {
+        if (gates[freeGate] && gates[freeGate].planeId === plane.id) {
+          gates[freeGate].status = 'ready';
+          prepareForTakeoff(plane, freeGate);
+        }
+      }, plane.refuelTime);
     }
-  }, plane.refuelTime);
+  }, 1000);
 }
 
-// === Preparar decolagem ===
-function prepareForTakeoff(plane) {
-  plane.at = 'departing';
+// Preparar decolagem (saída)
+function prepareForTakeoff(plane, gateId) {
+  gates[gateId] = null;
   updateUI();
 
-  // Decolar (sair do terminal)
+  // Decolar (simulação)
   setTimeout(() => {
     planesInAir = planesInAir.filter(p => p.id !== plane.id);
-    
-    // Recompensa
     const reward = plane.type === 'small' ? 200 : plane.type === 'medium' ? 500 : 1500;
     money += reward;
     updateUI();
   }, 2000);
 }
 
-// === Comprar 2ª pista ===
+// Comprar 2ª pista
 document.getElementById('buyRunway').addEventListener('click', () => {
   if (runways < 2 && money >= 3000) {
     money -= 3000;
     runways = 2;
-    
-    // Adiciona visualmente a 2ª pista
-    const container = document.getElementById('runwaysContainer');
-    if (!document.getElementById('runway2')) {
-      const runway2 = document.createElement('div');
-      runway2.className = 'runway';
-      runway2.id = 'runway2';
-      runway2.textContent = '✈️ PISTA 2';
-      container.appendChild(runway2);
-    }
     updateUI();
   }
 });
 
-// === Melhorar terminal ===
+// Melhorar terminal
 document.getElementById('upgradeTerminal').addEventListener('click', () => {
   if (terminalLevel < 3 && money >= 2000) {
     money -= 2000;
@@ -126,7 +140,7 @@ document.getElementById('upgradeTerminal').addEventListener('click', () => {
   }
 });
 
-// === Código secreto 25082003 ===
+// Código secreto 25082003
 let inputSequence = '';
 document.addEventListener('keydown', (e) => {
   if (/^\d$/.test(e.key)) {
@@ -140,12 +154,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// === Iniciar jogo ===
+// Iniciar jogo
 updateUI();
-
-// Gerar aviões continuamente
-setInterval(() => {
-  if (planesInAir.filter(p => !p.landed).length < 3) {
-    spawnPlane();
-  }
-}, 12000);
+setInterval(spawnPlane, 12000);

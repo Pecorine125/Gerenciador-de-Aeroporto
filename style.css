@@ -22,15 +22,6 @@ body {
   z-index: -2;
 }
 
-.grass {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  height: 30%;
-  background: #7CB342;
-  z-index: -1;
-}
-
 .game-container {
   max-width: 900px;
   margin: 0 auto;
@@ -61,80 +52,135 @@ h1 {
   font-size: 18px;
 }
 
-.airport-scene {
-  background: rgba(255, 255, 255, 0.85);
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+.airport-layout {
+  position: relative;
+  margin: 20px auto;
+  width: 100%;
+  max-width: 600px;
 }
 
-.runways-container {
-  display: flex;
-  justify-content: center;
-  gap: 15px;
-  margin-bottom: 25px;
-  flex-wrap: wrap;
-}
-
-.runway {
-  width: 200px;
+/* Pista Superior */
+.runway-top {
   height: 60px;
   background: #2E2E2E;
-  color: white;
+  border-radius: 30px 30px 0 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 30px;
+  color: white;
   font-weight: bold;
   box-shadow: 0 3px 6px rgba(0,0,0,0.3);
   position: relative;
-  overflow: hidden;
 }
 
-.runway::after {
+.runway-top::after {
   content: '';
   position: absolute;
   top: 50%;
-  left: -20%;
-  width: 40%;
+  left: 0;
+  width: 100%;
   height: 4px;
   background: #FFD700;
   animation: runwayLight 2s infinite;
 }
 
-@keyframes runwayLight {
-  to { left: 120%; }
+/* Taxiway Esquerda */
+.taxi-left {
+  width: 60px;
+  height: 100px;
+  background: #5D4037;
+  position: absolute;
+  left: 0;
+  top: 60px;
+  border-radius: 0 0 0 10px;
 }
 
-.terminal {
-  width: 220px;
-  height: 120px;
-  background: #1976D2;
-  color: white;
-  margin: 0 auto 20px;
-  border-radius: 12px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-}
-
-.terminal-level {
-  padding: 8px;
-  background: rgba(0,0,0,0.2);
-  font-weight: bold;
-}
-
-.terminal-content {
+/* Terminal com 6 vagas */
+.terminal-row {
   display: flex;
   justify-content: center;
+  gap: 10px;
+  margin: 0 auto;
+  padding: 20px;
+  background: #1976D2;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  position: relative;
+  z-index: 1;
+}
+
+.gate {
+  width: 50px;
+  height: 50px;
+  background: #90CAF9;
+  border: 2px dashed #1976D2;
+  border-radius: 6px;
+  position: relative;
+  display: flex;
   align-items: center;
-  height: calc(100% - 36px);
-  font-size: 24px;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.gate.occupied {
+  background: #64B5F6;
+  border-style: solid;
+}
+
+.gate.refueling {
+  background: #FFCCCB;
+  border-color: #D32F2F;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Taxiway Direita */
+.taxi-right {
+  width: 60px;
+  height: 100px;
+  background: #5D4037;
+  position: absolute;
+  right: 0;
+  top: 60px;
+  border-radius: 0 0 10px 0;
+}
+
+/* Pista Inferior */
+.runway-bottom {
+  height: 60px;
+  background: #2E2E2E;
+  border-radius: 0 0 30px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+  position: relative;
+  margin-top: 100px; /* espaço para taxiway */
+}
+
+.runway-bottom::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: #FFD700;
+  animation: runwayLight 2s infinite reverse;
+}
+
+@keyframes runwayLight {
+  to { left: 100%; }
 }
 
 .upgrades {
-  margin-top: 15px;
+  margin-top: 20px;
 }
 
 .upgrades button {
@@ -153,7 +199,6 @@ h1 {
   cursor: not-allowed;
 }
 
-/* Aviões no céu */
 .sky-queue {
   display: flex;
   justify-content: center;
@@ -172,7 +217,6 @@ h1 {
   gap: 5px;
 }
 
-/* Nuvens */
 .cloud {
   position: absolute;
   font-size: 30px;
