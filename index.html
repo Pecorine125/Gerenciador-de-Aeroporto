@@ -7,26 +7,44 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="game">
-    <!-- Barra superior -->
-    <div class="top-bar">
-      <div class="resource">💰 <span id="money">500</span></div>
-      <div class="resource">🌟 <span id="gold">10</span></div>
-      <div class="resource">👥 <span id="passengers">0</span></div>
+  <div class="sky"></div>
+  <div class="game-container">
+    <h1>✈️ Airport City</h1>
+
+    <!-- Recursos -->
+    <div class="resources">
+      <div class="res">💰 <span id="money">500</span></div>
+      <div class="res">🛫 Pistas: <span id="runways">1</span>/2</div>
+      <div class="res">🏢 Nível Terminal: <span id="terminalLevel">1</span></div>
     </div>
 
-    <!-- Área do aeroporto (grade 5x6) -->
-    <div class="airport-grid" id="airportGrid"></div>
+    <!-- Cenário do aeroporto -->
+    <div class="airport-scene">
+      <!-- Pistas (até 2) -->
+      <div class="runways-container" id="runwaysContainer">
+        <div class="runway" id="runway1">✈️ PISTA 1</div>
+      </div>
 
-    <!-- Barra de construção -->
-    <div class="build-bar">
-      <button class="build-btn" data-type="terminal" data-cost="200">🏢 Terminal (200💰)</button>
-      <button class="build-btn" data-type="fuel" data-cost="150">⛽ Posto (150💰)</button>
-      <button class="build-btn" data-type="hangar" data-cost="300">✈️ Hangar (300💰)</button>
+      <!-- Terminal -->
+      <div class="terminal" id="terminal">
+        <div class="terminal-level">NÍVEL <span id="terminalLevelDisplay">1</span></div>
+        <div class="terminal-content" id="terminalContent"></div>
+      </div>
+
+      <!-- Botões de upgrade -->
+      <div class="upgrades">
+        <button id="buyRunway">Comprar 2ª Pista (3000💰)</button>
+        <button id="upgradeTerminal">Melhorar Terminal (2000💰)</button>
+      </div>
     </div>
 
-    <!-- Aviões no ar -->
-    <div class="air-queue" id="airQueue"></div>
+    <!-- Aviões no ar (fila visual) -->
+    <div class="sky-queue" id="skyQueue"></div>
+
+    <!-- Nuvens decorativas -->
+    <div class="cloud c1">☁️</div>
+    <div class="cloud c2">☁️</div>
+    <div class="cloud c3">☁️</div>
   </div>
 
   <script src="script.js"></script>
