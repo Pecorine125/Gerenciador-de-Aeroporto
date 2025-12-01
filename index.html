@@ -3,38 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Aeroporto Manager Pro</title>
+  <title>✈️ Aeroporto Manager Pro</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="sky"></div>
   <div class="container">
     <h1>✈️ Aeroporto Manager Pro</h1>
+    
     <div class="stats">
-      <p>Pontuação: <span id="score">0</span></p>
-      <p>Aviões no ar: <span id="inAir">0</span></p>
-      <p>Vagas livres: <span id="freeSpots">10</span>/10</p>
+      <div class="stat-box">
+        <p>Pontuação: <span id="score">0</span></p>
+      </div>
+      <div class="stat-box">
+        <p>Aviões no ar: <span id="inAir">0</span></p>
+      </div>
+      <div class="stat-box">
+        <p>Vagas: <span id="freeSpots">20</span>/20</p>
+      </div>
+      <div class="stat-box money">
+        <p>Dinheiro: <span id="money">100</span> 💰</p>
+      </div>
     </div>
 
     <!-- Pista de Pouso -->
     <div class="runway landing" id="landingRunway">
-      <div class="label">PISTA DE POUSO</div>
+      <div class="label">🛬 POUSO</div>
     </div>
 
     <!-- Taxiway de entrada -->
-    <div class="taxiway" id="taxiIn"></div>
+    <div class="taxiway"></div>
 
-    <!-- Áreas de estacionamento -->
-    <div class="parking-level" id="upperParking">
-      <div class="parking-row">
-        <!-- 5 esquerda -->
+    <!-- Estacionamento Superior -->
+    <div class="parking-level">
+      <div class="parking-row" id="upperParking">
+        <!-- 10 vagas -->
         <div class="spot" data-id="U1"></div>
         <div class="spot" data-id="U2"></div>
-        <div div class="spot" data-id="U3"></div>
+        <div class="spot" data-id="U3"></div>
         <div class="spot" data-id="U4"></div>
         <div class="spot" data-id="U5"></div>
-      </div>
-      <div class="parking-row">
-        <!-- 5 direita -->
         <div class="spot" data-id="U6"></div>
         <div class="spot" data-id="U7"></div>
         <div class="spot" data-id="U8"></div>
@@ -43,15 +51,14 @@
       </div>
     </div>
 
-    <div class="parking-level" id="lowerParking">
-      <div class="parking-row">
+    <!-- Estacionamento Inferior -->
+    <div class="parking-level">
+      <div class="parking-row" id="lowerParking">
         <div class="spot" data-id="L1"></div>
         <div class="spot" data-id="L2"></div>
         <div class="spot" data-id="L3"></div>
         <div class="spot" data-id="L4"></div>
         <div class="spot" data-id="L5"></div>
-      </div>
-      <div class="parking-row">
         <div class="spot" data-id="L6"></div>
         <div class="spot" data-id="L7"></div>
         <div class="spot" data-id="L8"></div>
@@ -61,15 +68,24 @@
     </div>
 
     <!-- Taxiway de saída -->
-    <div class="taxiway" id="taxiOut"></div>
+    <div class="taxiway"></div>
 
     <!-- Pista de Decolagem -->
     <div class="runway takeoff" id="takeoffRunway">
-      <div class="label">PISTA DE DECOLAGEM</div>
+      <div class="label">🛫 DECOLAGEM</div>
     </div>
 
-    <!-- Controles (opcional para debug ou modo manual) -->
-    <button id="spawnPlaneBtn">✈️ Gerar Avião (Pouso)</button>
+    <!-- Upgrades -->
+    <div class="upgrades">
+      <h3>⚙️ Melhorias</h3>
+      <button id="upgradeRefuel">Acelerar Reabastecimento (50💰)</button>
+      <button id="upgradeRunway">Ampliar Pista (+1 avião, 80💰)</button>
+    </div>
+
+    <!-- Nuvens decorativas -->
+    <div class="cloud c1">☁️</div>
+    <div class="cloud c2">☁️</div>
+    <div class="cloud c3">☁️</div>
   </div>
 
   <script src="script.js"></script>

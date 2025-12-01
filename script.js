@@ -1,38 +1,48 @@
+// === Estado do Jogo ===
 let score = 0;
+let money = 100;
 let planesInAir = 0;
 let nextPlaneId = 1;
+let refuelTime = 5000; // 5 segundos
+let maxLandingPlanes = 1;
+let currentLandingPlanes = 0;
 
-// Estado das vagas: { id: null ou { planeId, status: 'parked' | 'refueling' | 'ready' } }
+// Vagas
+const spotIds = [
+  'U1','U2','U3','U4','U5','U6','U7','U8','U9','U10',
+  'L1','L2','L3','L4','L5','L6','L7','L8','L9','L10'
+];
 const parkingSpots = {};
-['U1','U2','U3','U4','U5','U6','U7','U8','U9','U10','L1','L2','L3','L4','L5','L6','L7','L8','L9','L10']
-  .forEach(id => parkingSpots[id] = null);
+spotIds.forEach(id => parkingSpots[id] = null);
 
-const elements = {
+// Elementos
+const el = {
   score: document.getElementById('score'),
   inAir: document.getElementById('inAir'),
   freeSpots: document.getElementById('freeSpots'),
+  money: document.getElementById('money'),
   landingRunway: document.getElementById('landingRunway'),
-  takeoffRunway: document.getElementById('takeoffRunway'),
-  upperParking: document.getElementById('upperParking'),
-  lowerParking: document.getElementById('lowerParking')
+  takeoffRunway: document.getElementById('takeoffRunway')
 };
 
+// === Atualiza interface ===
 function updateStats() {
-  elements.score.textContent = score;
-  elements.inAir.textContent = planesInAir;
+  el.score.textContent = score;
+  el.inAir.textContent = planesInAir;
+  el.money.textContent = money;
   const free = Object.values(parkingSpots).filter(s => s === null).length;
-  elements.freeSpots.textContent = free;
+  el.freeSpots.textContent = free;
 }
 
-// Encontrar vaga livre
+// === Encontrar vaga livre ===
 function findFreeSpot() {
-  for (const id in parkingSpots) {
+  for (const id of spotIds) {
     if (parkingSpots[id] === null) return id;
   }
   return null;
 }
 
-// Animação: mover elemento de A para B
+// === Movimento suave ===
 function moveElement(element, fromRect, toRect, duration = 3000) {
   return new Promise((resolve) => {
     const startX = fromRect.left + fromRect.width / 2;
@@ -44,7 +54,7 @@ function moveElement(element, fromRect, toRect, duration = 3000) {
     element.style.left = startX + 'px';
     element.style.top = startY + 'px';
     element.style.transition = `left ${duration}ms linear, top ${duration}ms linear`;
-    
+    element.style.zIndex = '200';
     document.body.appendChild(element);
 
     setTimeout(() => {
@@ -59,96 +69,114 @@ function moveElement(element, fromRect, toRect, duration = 3000) {
   });
 }
 
-// Função principal: avião pousa
-async function landPlane() {
+// === Pouso automático ===
+async function autoLandPlane() {
+  if (currentLandingPlanes >= maxLandingPlanes) return;
+  const spotId = findFreeSpot();
+  if (!spotId) return;
+
+  currentLandingPlanes++;
   const planeId = nextPlaneId++;
   planesInAir++;
   updateStats();
 
-  const spotId = findFreeSpot();
-  if (!spotId) {
-    alert("⚠️ Nenhuma vaga disponível! Avião desviado.");
-    planesInAir--;
-    updateStats();
-    return;
-  }
-
-  // 1. Avião aparece na pista de pouso
   const planeEl = document.createElement('div');
   planeEl.className = 'tug';
   planeEl.textContent = '✈️';
-  const landingRect = elements.landingRunway.getBoundingClientRect();
-  document.body.appendChild(planeEl);
-  planeEl.style.left = (landingRect.left + landingRect.width) + 'px';
-  planeEl.style.top = (landingRect.top + landingRect.height / 2) + 'px';
+  const landingRect = el.landingRunway.getBoundingClientRect();
 
-  // 2. Move para vaga
+  // Aparece vindo da direita
+  planeEl.style.left = (landingRect.right + 150) + 'px';
+  planeEl.style.top = (landingRect.top + landingRect.height / 2 - 12) + 'px';
+  document.body.appendChild(planeEl);
+
+  // Desliza para pista
+  setTimeout(() => {
+    planeEl.style.transition = 'left 2s ease-out';
+    planeEl.style.left = (landingRect.left - 60) + 'px';
+  }, 100);
+
+  await new Promise(r => setTimeout(r, 2100));
+
+  // Vai para vaga
   const spotEl = document.querySelector(`.spot[data-id="${spotId}"]`);
   const spotRect = spotEl.getBoundingClientRect();
-  await moveElement(planeEl, landingRect, spotRect);
+  await moveElement(planeEl, landingRect, spotRect, 2500);
 
-  // 3. Ocupar vaga
+  // Ocupa vaga
   parkingSpots[spotId] = { planeId, status: 'parked' };
   spotEl.classList.add('occupied');
 
-  // 4. Iniciar reabastecimento (simulado)
+  currentLandingPlanes--;
+
+  // Reabastecimento
   setTimeout(() => {
-    if (parkingSpots[spotId]) {
+    if (parkingSpots[spotId]?.status === 'parked') {
       spotEl.classList.remove('occupied');
       spotEl.classList.add('refueling');
       parkingSpots[spotId].status = 'refueling';
 
-      // 5. Após reabastecimento, ficar pronto para decolagem
       setTimeout(() => {
         if (parkingSpots[spotId]) {
           spotEl.classList.remove('refueling');
           spotEl.classList.add('occupied');
           parkingSpots[spotId].status = 'ready';
-          scheduleTakeoff(spotId);
+          prepareForTakeoff(spotId);
         }
-      }, 5000); // 5s de reabastecimento
+      }, refuelTime);
     }
-  }, 2000); // 2s após estacionar
+  }, 1500);
 }
 
-// Agendar decolagem quando estiver pronto
-async function scheduleTakeoff(spotId) {
+// === Decolagem ===
+async function prepareForTakeoff(spotId) {
   const spotEl = document.querySelector(`.spot[data-id="${spotId}"]`);
   const spotData = parkingSpots[spotId];
   if (!spotData || spotData.status !== 'ready') return;
 
-  // Criar rebocador
-  const tugEl = document.createElement('div');
-  tugEl.className = 'tug';
-  tugEl.textContent = '🚜';
-
   const spotRect = spotEl.getBoundingClientRect();
-  const takeoffRect = elements.takeoffRunway.getBoundingClientRect();
+  const takeoffRect = el.takeoffRunway.getBoundingClientRect();
 
-  // Mover avião da vaga para pista de decolagem
   const planeEl = document.createElement('div');
   planeEl.className = 'tug';
   planeEl.textContent = '✈️';
 
-  await moveElement(planeEl, spotRect, takeoffRect, 4000);
+  await moveElement(planeEl, spotRect, takeoffRect, 3000);
 
-  // Decolar
   setTimeout(() => {
     planeEl.remove();
     spotEl.classList.remove('occupied');
     parkingSpots[spotId] = null;
     score += 20;
+    money += 10;
     planesInAir--;
     updateStats();
   }, 1000);
 }
 
-// Botão de teste
-document.getElementById('spawnPlaneBtn').addEventListener('click', landPlane);
+// === Upgrades ===
+document.getElementById('upgradeRefuel').addEventListener('click', () => {
+  if (money >= 50 && refuelTime > 1000) {
+    money -= 50;
+    refuelTime = Math.max(1000, refuelTime - 1000);
+    updateStats();
+    alert(`✅ Reabastecimento agora leva ${refuelTime / 1000} segundo(s)!`);
+  }
+});
 
-// Gerar aviões automaticamente (opcional)
-// setInterval(() => {
-//   if (Math.random() < 0.2) landPlane();
-// }, 8000);
+document.getElementById('upgradeRunway').addEventListener('click', () => {
+  if (money >= 80) {
+    money -= 80;
+    maxLandingPlanes++;
+    updateStats();
+    alert(`✅ Pista ampliada! Agora aceita ${maxLandingPlanes} avião(s) pousando ao mesmo tempo.`);
+  }
+});
 
+// === Iniciar ===
 updateStats();
+
+// Geração automática de aviões
+setInterval(() => {
+  if (Math.random() < 0.35) autoLandPlane();
+}, 7000);
