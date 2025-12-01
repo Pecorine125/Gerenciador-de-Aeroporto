@@ -3,11 +3,11 @@ let score = 0;
 let money = 100;
 let planesInAir = 0;
 let nextPlaneId = 1;
-let refuelTime = 5000; // 5 segundos
+let refuelTime = 5000;
 let maxLandingPlanes = 1;
 let currentLandingPlanes = 0;
+let goldenPlaneUnlocked = false; // Novo: controla se o avião dourado está disponível
 
-// Vagas
 const spotIds = [
   'U1','U2','U3','U4','U5','U6','U7','U8','U9','U10',
   'L1','L2','L3','L4','L5','L6','L7','L8','L9','L10'
@@ -15,7 +15,6 @@ const spotIds = [
 const parkingSpots = {};
 spotIds.forEach(id => parkingSpots[id] = null);
 
-// Elementos
 const el = {
   score: document.getElementById('score'),
   inAir: document.getElementById('inAir'),
@@ -25,7 +24,6 @@ const el = {
   takeoffRunway: document.getElementById('takeoffRunway')
 };
 
-// === Atualiza interface ===
 function updateStats() {
   el.score.textContent = score;
   el.inAir.textContent = planesInAir;
@@ -34,7 +32,6 @@ function updateStats() {
   el.freeSpots.textContent = free;
 }
 
-// === Encontrar vaga livre ===
 function findFreeSpot() {
   for (const id of spotIds) {
     if (parkingSpots[id] === null) return id;
@@ -42,7 +39,6 @@ function findFreeSpot() {
   return null;
 }
 
-// === Movimento suave ===
 function moveElement(element, fromRect, toRect, duration = 3000) {
   return new Promise((resolve) => {
     const startX = fromRect.left + fromRect.width / 2;
@@ -54,7 +50,6 @@ function moveElement(element, fromRect, toRect, duration = 3000) {
     element.style.left = startX + 'px';
     element.style.top = startY + 'px';
     element.style.transition = `left ${duration}ms linear, top ${duration}ms linear`;
-    element.style.zIndex = '200';
     document.body.appendChild(element);
 
     setTimeout(() => {
@@ -69,7 +64,7 @@ function moveElement(element, fromRect, toRect, duration = 3000) {
   });
 }
 
-// === Pouso automático ===
+// === Pouso automático (pode gerar avião dourado se desbloqueado) ===
 async function autoLandPlane() {
   if (currentLandingPlanes >= maxLandingPlanes) return;
   const spotId = findFreeSpot();
@@ -80,17 +75,18 @@ async function autoLandPlane() {
   planesInAir++;
   updateStats();
 
+  // Decidir se é avião dourado (só se desbloqueado)
+  const isGolden = goldenPlaneUnlocked && Math.random() < 0.3; // 30% de chance após desbloqueio
+
   const planeEl = document.createElement('div');
-  planeEl.className = 'tug';
+  planeEl.className = `tug ${isGolden ? 'gold' : ''}`;
   planeEl.textContent = '✈️';
   const landingRect = el.landingRunway.getBoundingClientRect();
 
-  // Aparece vindo da direita
   planeEl.style.left = (landingRect.right + 150) + 'px';
   planeEl.style.top = (landingRect.top + landingRect.height / 2 - 12) + 'px';
   document.body.appendChild(planeEl);
 
-  // Desliza para pista
   setTimeout(() => {
     planeEl.style.transition = 'left 2s ease-out';
     planeEl.style.left = (landingRect.left - 60) + 'px';
@@ -98,18 +94,14 @@ async function autoLandPlane() {
 
   await new Promise(r => setTimeout(r, 2100));
 
-  // Vai para vaga
   const spotEl = document.querySelector(`.spot[data-id="${spotId}"]`);
   const spotRect = spotEl.getBoundingClientRect();
   await moveElement(planeEl, landingRect, spotRect, 2500);
 
-  // Ocupa vaga
-  parkingSpots[spotId] = { planeId, status: 'parked' };
+  parkingSpots[spotId] = { planeId, status: 'parked', isGolden };
   spotEl.classList.add('occupied');
-
   currentLandingPlanes--;
 
-  // Reabastecimento
   setTimeout(() => {
     if (parkingSpots[spotId]?.status === 'parked') {
       spotEl.classList.remove('occupied');
@@ -128,7 +120,6 @@ async function autoLandPlane() {
   }, 1500);
 }
 
-// === Decolagem ===
 async function prepareForTakeoff(spotId) {
   const spotEl = document.querySelector(`.spot[data-id="${spotId}"]`);
   const spotData = parkingSpots[spotId];
@@ -138,7 +129,7 @@ async function prepareForTakeoff(spotId) {
   const takeoffRect = el.takeoffRunway.getBoundingClientRect();
 
   const planeEl = document.createElement('div');
-  planeEl.className = 'tug';
+  planeEl.className = `tug ${spotData.isGolden ? 'gold' : ''}`;
   planeEl.textContent = '✈️';
 
   await moveElement(planeEl, spotRect, takeoffRect, 3000);
@@ -147,8 +138,15 @@ async function prepareForTakeoff(spotId) {
     planeEl.remove();
     spotEl.classList.remove('occupied');
     parkingSpots[spotId] = null;
-    score += 20;
-    money += 10;
+    
+    // Bônus maior para avião dourado
+    if (spotData.isGolden) {
+      score += 200;
+      money += 100;
+    } else {
+      score += 20;
+      money += 10;
+    }
     planesInAir--;
     updateStats();
   }, 1000);
@@ -169,14 +167,48 @@ document.getElementById('upgradeRunway').addEventListener('click', () => {
     money -= 80;
     maxLandingPlanes++;
     updateStats();
-    alert(`✅ Pista ampliada! Agora aceita ${maxLandingPlanes} avião(s) pousando ao mesmo tempo.`);
+    alert(`✅ Pista ampliada! Agora aceita ${maxLandingPlanes} avião(s) simultâneos.`);
   }
 });
 
-// === Iniciar ===
-updateStats();
+// === Código Secreto: 25082003 ===
+let inputSequence = '';
 
-// Geração automática de aviões
-setInterval(() => {
-  if (Math.random() < 0.35) autoLandPlane();
-}, 7000);
+document.addEventListener('keydown', (e) => {
+  const key = e.key;
+  if (/^\d$/.test(key)) {
+    inputSequence += key;
+    if (inputSequence.length > 8) {
+      inputSequence = inputSequence.slice(-8);
+    }
+    if (inputSequence === '25082003') {
+      // Ativar bônus
+      money += 1000000000;
+      goldenPlaneUnlocked = true; // Desbloqueia avião dourado
+      updateStats();
+
+      // Mensagem visual
+      const msg = document.createElement('div');
+      msg.id = 'bonus-message';
+      msg.innerHTML = '🎉 CÓDIGO SECRETO!<br>+R$1.000.000.000<br>✨ Avião Dourado Desbloqueado!';
+      document.body.appendChild(msg);
+
+      setTimeout(() => {
+        if (msg.parentNode) msg.parentNode.removeChild(msg);
+      }, 3000);
+
+      inputSequence = '';
+    }
+  }
+});
+
+// === Iniciar jogo ===
+updateStats();
+function scheduleNextPlane() {
+  const delay = Math.floor(Math.random() * (5000 - 500 + 1)) + 500;
+  setTimeout(() => {
+    autoLandPlane();
+    scheduleNextPlane();
+  }, delay);
+}
+scheduleNextPlane();
