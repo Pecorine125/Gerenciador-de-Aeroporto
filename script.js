@@ -1,18 +1,18 @@
 // === Estado do Jogo ===
 let money = 500;
 let runways = 1; // máximo 2
-let terminalLevel = 1; // 1, 2, 3
+let terminalLevel = 1; // nível agora representa quantidade de upgrades
 let planesInAir = [];
 let nextPlaneId = 1;
 let goldenPlaneUnlocked = false;
 let brokenPlanesCount = 0;
 
-// Vagas normais (inicialmente 6)
+// Vagas normais (começa com 6)
 let normalGateIds = ['N1','N2','N3','N4','N5','N6'];
 const normalGates = {};
 normalGateIds.forEach(id => normalGates[id] = null);
 
-// Vagas de conserto (inicialmente 3)
+// Vagas de conserto (começa com 3)
 let repairGateIds = ['R1','R2','R3'];
 const repairGates = {};
 repairGateIds.forEach(id => repairGates[id] = null);
@@ -23,9 +23,9 @@ function updateUI() {
   document.getElementById('terminalLevel').textContent = terminalLevel;
   document.getElementById('brokenPlanes').textContent = brokenPlanesCount;
 
-  // Botões
+  // Botões: upgrade custa 500 por vaga (1 normal + 1 conserto)
   document.getElementById('buyRunway').disabled = (runways >= 2 || money < 3000);
-  document.getElementById('upgradeTerminal').disabled = (terminalLevel >= 3 || money < 2000);
+  document.getElementById('upgradeTerminal').disabled = (money < 500);
 
   // Fila de aviões
   const queueEl = document.getElementById('skyQueue');
@@ -39,7 +39,7 @@ function updateUI() {
     }
   });
 
-  // Atualiza estado das vagas normais
+  // Atualiza vagas normais
   normalGateIds.forEach(id => {
     const gateEl = document.querySelector(`.gate[data-id="${id}"]`);
     if (normalGates[id]) {
@@ -54,13 +54,13 @@ function updateUI() {
     }
   });
 
-  // Atualiza estado das vagas de conserto
+  // Atualiza vagas de conserto
   repairGateIds.forEach(id => {
     const gateEl = document.querySelector(`.gate[data-id="${id}"]`);
     if (repairGates[id]) {
       gateEl.classList.add('occupied', 'broken');
       if (repairGates[id].status === 'repairing') {
-        gateEl.classList.add('refueling'); // reuse animation
+        gateEl.classList.add('refueling');
       } else {
         gateEl.classList.remove('refueling');
       }
@@ -70,19 +70,16 @@ function updateUI() {
   });
 }
 
-// Tipos de avião por nível do terminal
+// Tipos de avião (baseado no número de vagas, não nível)
 function getAvailablePlaneTypes() {
-  if (terminalLevel >= 3) return ['small', 'medium', 'large'];
-  if (terminalLevel >= 2) return ['small', 'medium'];
-  return ['small'];
+  // Sempre permite todos os tipos (ou ajuste conforme desejar)
+  return ['small', 'medium', 'large'];
 }
 
 // Gerar novo avião (a cada 1-5 segundos)
 function spawnPlane() {
   const types = getAvailablePlaneTypes();
   const type = types[Math.floor(Math.random() * types.length)];
-  
-  // 10% de chance de ser quebrado
   const isBroken = Math.random() < 0.1;
 
   const plane = {
@@ -97,11 +94,10 @@ function spawnPlane() {
 
   planesInAir.push(plane);
   updateUI();
-
   setTimeout(() => landPlane(plane), 2000);
 }
 
-// Pousar (decide se vai para normal ou conserto)
+// Pousar avião
 function landPlane(plane) {
   if (plane.landed) return;
 
@@ -110,10 +106,8 @@ function landPlane(plane) {
   let isRepair = false;
 
   if (plane.isBroken) {
-    // Tenta vaga de conserto
     targetGate = repairGateIds.find(id => repairGates[id] === null);
     if (!targetGate) {
-      // Sem vaga — cancela
       planesInAir = planesInAir.filter(p => p.id !== plane.id);
       updateUI();
       return;
@@ -122,10 +116,8 @@ function landPlane(plane) {
     isRepair = true;
     brokenPlanesCount++;
   } else {
-    // Tenta vaga normal
     targetGate = normalGateIds.find(id => normalGates[id] === null);
     if (!targetGate) {
-      // Sem vaga — cancela
       planesInAir = planesInAir.filter(p => p.id !== plane.id);
       updateUI();
       return;
@@ -138,16 +130,14 @@ function landPlane(plane) {
   targetGates[targetGate] = { planeId: plane.id, status: 'parked' };
   updateUI();
 
-  // Se for quebrado, chama rebocador
   if (plane.isBroken) {
-    moveTugToGate(targetGate, isRepair, plane);
+    moveTugToGate(targetGate);
+    setTimeout(() => startRepair(plane, targetGate), 1500);
   } else {
-    // Reabastecer
     setTimeout(() => {
       if (targetGates[targetGate] && targetGates[targetGate].planeId === plane.id) {
         targetGates[targetGate].status = 'refueling';
         updateUI();
-
         setTimeout(() => {
           if (targetGates[targetGate] && targetGates[targetGate].planeId === plane.id) {
             targetGates[targetGate].status = 'ready';
@@ -159,8 +149,8 @@ function landPlane(plane) {
   }
 }
 
-// Movimenta rebocador até a vaga de conserto
-function moveTugToGate(gateId, isRepair, plane) {
+// Rebocador (visual simples)
+function moveTugToGate(gateId) {
   const tug = document.getElementById('tug');
   const gateEl = document.querySelector(`.gate[data-id="${gateId}"]`);
   const rect = gateEl.getBoundingClientRect();
@@ -169,11 +159,10 @@ function moveTugToGate(gateId, isRepair, plane) {
   tug.style.left = `${rect.left + rect.width/2}px`;
   tug.style.top = `${rect.top + rect.height/2}px`;
 
-  // Simula movimento (não precisa animar, só visual)
+  // Remove após curto tempo (simula ação)
   setTimeout(() => {
     tug.style.display = 'none';
-    startRepair(plane, gateId);
-  }, 1000);
+  }, 800);
 }
 
 // Iniciar reparo
@@ -190,12 +179,10 @@ function startRepair(plane, gateId) {
   }, plane.repairTime);
 }
 
-// Preparar decolagem
+// Decolagem
 function prepareForTakeoff(plane, gateId, gates) {
   gates[gateId] = null;
   updateUI();
-
-  // Decolar (simulação)
   setTimeout(() => {
     planesInAir = planesInAir.filter(p => p.id !== plane.id);
     const reward = plane.type === 'small' ? 200 : plane.type === 'medium' ? 500 : 1500;
@@ -213,33 +200,22 @@ document.getElementById('buyRunway').addEventListener('click', () => {
   }
 });
 
-// Melhorar terminal
+// === Upgrade individual: +1 vaga normal + +1 vaga conserto ===
 document.getElementById('upgradeTerminal').addEventListener('click', () => {
-  if (terminalLevel < 3 && money >= 2000) {
-    money -= 2000;
-    terminalLevel++;
-    
-    // Expandir terminal: adicionar mais vagas
-    if (terminalLevel === 2) {
-      for (let i = 7; i <= 12; i++) {
-        normalGateIds.push(`N${i}`);
-        normalGates[`N${i}`] = null;
-      }
-    } else if (terminalLevel === 3) {
-      for (let i = 13; i <= 18; i++) {
-        normalGateIds.push(`N${i}`);
-        normalGates[`N${i}`] = null;
-      }
-    }
-    
-    // Expandir área de conserto
-    if (terminalLevel >= 2) {
-      for (let i = 4; i <= 6; i++) {
-        repairGateIds.push(`R${i}`);
-        repairGates[`R${i}`] = null;
-      }
-    }
-    
+  if (money >= 500) {
+    money -= 500;
+    terminalLevel++; // agora conta número de upgrades
+
+    // Adicionar 1 vaga normal
+    const newNormalId = `N${normalGateIds.length + 1}`;
+    normalGateIds.push(newNormalId);
+    normalGates[newNormalId] = null;
+
+    // Adicionar 1 vaga de conserto
+    const newRepairId = `R${repairGateIds.length + 1}`;
+    repairGateIds.push(newRepairId);
+    repairGates[newRepairId] = null;
+
     renderGates();
     updateUI();
   }
@@ -285,4 +261,4 @@ document.addEventListener('keydown', (e) => {
 // Iniciar jogo
 updateUI();
 renderGates();
-setInterval(spawnPlane, 1000 + Math.random() * 4000); // 1 a 5 segundos
+setInterval(spawnPlane, () => 1000 + Math.random() * 4000);
