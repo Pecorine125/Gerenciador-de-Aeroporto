@@ -3,47 +3,59 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>✈️ Airport City - Layout U Pro</title>
+  <title>✈️ Airport City - Pro Layout U</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="sky"></div>
   <div class="game-container">
-    <h1>✈️ Airport City - Layout U Pro</h1>
+    <h1>✈️ Airport City - Pro Layout U</h1>
 
     <!-- Recursos -->
     <div class="resources">
       <div class="res">💰 <span id="money">500</span></div>
       <div class="res">🛫 Pistas: <span id="runways">1</span>/2</div>
       <div class="res">🏢 Nível Terminal: <span id="terminalLevel">1</span></div>
+      <div class="res">🔧 Quebrados: <span id="brokenPlanes">0</span></div>
     </div>
 
     <!-- Cenário do aeroporto (SVG + HTML) -->
     <div class="airport-scene">
-      <svg width="100%" height="400" viewBox="0 0 800 400" preserveAspectRatio="xMidYMid meet">
+      <svg width="100%" height="450" viewBox="0 0 800 450" preserveAspectRatio="xMidYMid meet">
         <!-- Fundo cinza da pista -->
-        <path id="runwayPath" d="M50,50 H750 Q780,50 780,80 V320 Q780,350 750,350 H50 Q20,350 20,320 V80 Q20,50 50,50 Z" fill="#888" stroke="#555" stroke-width="2"/>
+        <path d="M50,50 H750 Q780,50 780,80 V370 Q780,400 750,400 H50 Q20,400 20,370 V80 Q20,50 50,50 Z" fill="#888" stroke="#555" stroke-width="2"/>
 
         <!-- Pista Superior -->
         <rect x="50" y="50" width="700" height="30" rx="15" fill="#2E2E2E" stroke="#FFF" stroke-width="1"/>
         <text x="400" y="70" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Pouso</text>
 
         <!-- Taxiway Esquerda -->
-        <rect x="20" y="80" width="30" height="240" rx="10" fill="#5D4037" />
+        <rect x="20" y="80" width="30" height="290" rx="10" fill="#5D4037" />
 
         <!-- Taxiway Direita -->
-        <rect x="750" y="80" width="30" height="240" rx="10" fill="#5D4037" />
+        <rect x="750" y="80" width="30" height="290" rx="10" fill="#5D4037" />
 
         <!-- Pista Inferior -->
-        <rect x="50" y="320" width="700" height="30" rx="15" fill="#2E2E2E" stroke="#FFF" stroke-width="1"/>
-        <text x="400" y="340" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Decolagem</text>
+        <rect x="50" y="370" width="700" height="30" rx="15" fill="#2E2E2E" stroke="#FFF" stroke-width="1"/>
+        <text x="400" y="390" text-anchor="middle" fill="white" font-size="14" font-weight="bold">Decolagem</text>
 
-        <!-- Área do Terminal (será preenchida dinamicamente) -->
+        <!-- Área do Terminal Normal -->
         <rect id="terminalArea" x="50" y="100" width="700" height="120" fill="#1976D2" rx="10" opacity="0.9"/>
+        <text x="400" y="115" text-anchor="middle" fill="white" font-size="12">Terminal Normal</text>
+
+        <!-- Área de Conserto -->
+        <rect id="repairArea" x="50" y="250" width="700" height="100" fill="#FF5722" rx="10" opacity="0.9"/>
+        <text x="400" y="265" text-anchor="middle" fill="white" font-size="12">Conserto de Aviões</text>
       </svg>
 
-      <!-- Vagas (serão inseridas dinamicamente aqui) -->
-      <div id="gatesContainer" class="gates-container"></div>
+      <!-- Vagas Normais -->
+      <div id="normalGatesContainer" class="gates-container normal-gates"></div>
+
+      <!-- Vagas de Conserto -->
+      <div id="repairGatesContainer" class="gates-container repair-gates"></div>
+
+      <!-- Rebocador (visual) -->
+      <div id="tug" class="tug" style="display:none;">🚜</div>
     </div>
 
     <!-- Botões de upgrade -->

@@ -5,16 +5,23 @@ let terminalLevel = 1; // 1, 2, 3
 let planesInAir = [];
 let nextPlaneId = 1;
 let goldenPlaneUnlocked = false;
+let brokenPlanesCount = 0;
 
-// Vagas (inicialmente 6)
-let gateIds = ['G1','G2','G3','G4','G5','G6'];
-const gates = {};
-gateIds.forEach(id => gates[id] = null);
+// Vagas normais (inicialmente 6)
+let normalGateIds = ['N1','N2','N3','N4','N5','N6'];
+const normalGates = {};
+normalGateIds.forEach(id => normalGates[id] = null);
+
+// Vagas de conserto (inicialmente 3)
+let repairGateIds = ['R1','R2','R3'];
+const repairGates = {};
+repairGateIds.forEach(id => repairGates[id] = null);
 
 function updateUI() {
   document.getElementById('money').textContent = money.toLocaleString('pt-BR');
   document.getElementById('runways').textContent = runways;
   document.getElementById('terminalLevel').textContent = terminalLevel;
+  document.getElementById('brokenPlanes').textContent = brokenPlanesCount;
 
   // Botões
   document.getElementById('buyRunway').disabled = (runways >= 2 || money < 3000);
@@ -27,23 +34,38 @@ function updateUI() {
     if (!plane.landed) {
       const el = document.createElement('div');
       el.className = 'aircraft-sky';
-      el.innerHTML = `✈️ ${plane.type}`;
+      el.innerHTML = `✈️ ${plane.type} ${plane.isBroken ? '(quebrado)' : ''}`;
       queueEl.appendChild(el);
     }
   });
 
-  // Atualiza estado das vagas
-  gateIds.forEach(id => {
+  // Atualiza estado das vagas normais
+  normalGateIds.forEach(id => {
     const gateEl = document.querySelector(`.gate[data-id="${id}"]`);
-    if (gates[id]) {
+    if (normalGates[id]) {
       gateEl.classList.add('occupied');
-      if (gates[id].status === 'refueling') {
+      if (normalGates[id].status === 'refueling') {
         gateEl.classList.add('refueling');
       } else {
         gateEl.classList.remove('refueling');
       }
     } else {
       gateEl.classList.remove('occupied', 'refueling');
+    }
+  });
+
+  // Atualiza estado das vagas de conserto
+  repairGateIds.forEach(id => {
+    const gateEl = document.querySelector(`.gate[data-id="${id}"]`);
+    if (repairGates[id]) {
+      gateEl.classList.add('occupied', 'broken');
+      if (repairGates[id].status === 'repairing') {
+        gateEl.classList.add('refueling'); // reuse animation
+      } else {
+        gateEl.classList.remove('refueling');
+      }
+    } else {
+      gateEl.classList.remove('occupied', 'broken', 'refueling');
     }
   });
 }
@@ -55,17 +77,22 @@ function getAvailablePlaneTypes() {
   return ['small'];
 }
 
-// Gerar novo avião
+// Gerar novo avião (a cada 1-5 segundos)
 function spawnPlane() {
   const types = getAvailablePlaneTypes();
   const type = types[Math.floor(Math.random() * types.length)];
+  
+  // 10% de chance de ser quebrado
+  const isBroken = Math.random() < 0.1;
 
   const plane = {
     id: nextPlaneId++,
     type,
+    isBroken,
     landed: false,
     at: null,
-    refuelTime: type === 'small' ? 3000 : type === 'medium' ? 5000 : 8000
+    refuelTime: type === 'small' ? 3000 : type === 'medium' ? 5000 : 8000,
+    repairTime: 8000
   };
 
   planesInAir.push(plane);
@@ -74,42 +101,97 @@ function spawnPlane() {
   setTimeout(() => landPlane(plane), 2000);
 }
 
-// Pousar (vai para vaga)
+// Pousar (decide se vai para normal ou conserto)
 function landPlane(plane) {
   if (plane.landed) return;
 
-  // Encontrar vaga livre
-  const freeGate = gateIds.find(id => gates[id] === null);
-  if (!freeGate) {
-    // Sem vaga — cancela
-    planesInAir = planesInAir.filter(p => p.id !== plane.id);
-    updateUI();
-    return;
+  let targetGate = null;
+  let targetGates = null;
+  let isRepair = false;
+
+  if (plane.isBroken) {
+    // Tenta vaga de conserto
+    targetGate = repairGateIds.find(id => repairGates[id] === null);
+    if (!targetGate) {
+      // Sem vaga — cancela
+      planesInAir = planesInAir.filter(p => p.id !== plane.id);
+      updateUI();
+      return;
+    }
+    targetGates = repairGates;
+    isRepair = true;
+    brokenPlanesCount++;
+  } else {
+    // Tenta vaga normal
+    targetGate = normalGateIds.find(id => normalGates[id] === null);
+    if (!targetGate) {
+      // Sem vaga — cancela
+      planesInAir = planesInAir.filter(p => p.id !== plane.id);
+      updateUI();
+      return;
+    }
+    targetGates = normalGates;
   }
 
   plane.landed = true;
-  plane.at = freeGate;
-  gates[freeGate] = { planeId: plane.id, status: 'parked' };
+  plane.at = targetGate;
+  targetGates[targetGate] = { planeId: plane.id, status: 'parked' };
   updateUI();
 
-  // Reabastecer
-  setTimeout(() => {
-    if (gates[freeGate] && gates[freeGate].planeId === plane.id) {
-      gates[freeGate].status = 'refueling';
-      updateUI();
+  // Se for quebrado, chama rebocador
+  if (plane.isBroken) {
+    moveTugToGate(targetGate, isRepair, plane);
+  } else {
+    // Reabastecer
+    setTimeout(() => {
+      if (targetGates[targetGate] && targetGates[targetGate].planeId === plane.id) {
+        targetGates[targetGate].status = 'refueling';
+        updateUI();
 
-      setTimeout(() => {
-        if (gates[freeGate] && gates[freeGate].planeId === plane.id) {
-          gates[freeGate].status = 'ready';
-          prepareForTakeoff(plane, freeGate);
-        }
-      }, plane.refuelTime);
-    }
+        setTimeout(() => {
+          if (targetGates[targetGate] && targetGates[targetGate].planeId === plane.id) {
+            targetGates[targetGate].status = 'ready';
+            prepareForTakeoff(plane, targetGate, targetGates);
+          }
+        }, plane.refuelTime);
+      }
+    }, 1000);
+  }
+}
+
+// Movimenta rebocador até a vaga de conserto
+function moveTugToGate(gateId, isRepair, plane) {
+  const tug = document.getElementById('tug');
+  const gateEl = document.querySelector(`.gate[data-id="${gateId}"]`);
+  const rect = gateEl.getBoundingClientRect();
+  
+  tug.style.display = 'block';
+  tug.style.left = `${rect.left + rect.width/2}px`;
+  tug.style.top = `${rect.top + rect.height/2}px`;
+
+  // Simula movimento (não precisa animar, só visual)
+  setTimeout(() => {
+    tug.style.display = 'none';
+    startRepair(plane, gateId);
   }, 1000);
 }
 
-// Preparar decolagem (saída)
-function prepareForTakeoff(plane, gateId) {
+// Iniciar reparo
+function startRepair(plane, gateId) {
+  repairGates[gateId].status = 'repairing';
+  updateUI();
+
+  setTimeout(() => {
+    if (repairGates[gateId] && repairGates[gateId].planeId === plane.id) {
+      repairGates[gateId].status = 'ready';
+      brokenPlanesCount--;
+      prepareForTakeoff(plane, gateId, repairGates);
+    }
+  }, plane.repairTime);
+}
+
+// Preparar decolagem
+function prepareForTakeoff(plane, gateId, gates) {
   gates[gateId] = null;
   updateUI();
 
@@ -139,36 +221,50 @@ document.getElementById('upgradeTerminal').addEventListener('click', () => {
     
     // Expandir terminal: adicionar mais vagas
     if (terminalLevel === 2) {
-      // Adiciona 6 vagas novas
       for (let i = 7; i <= 12; i++) {
-        gateIds.push(`G${i}`);
-        gates[`G${i}`] = null;
+        normalGateIds.push(`N${i}`);
+        normalGates[`N${i}`] = null;
       }
     } else if (terminalLevel === 3) {
-      // Adiciona mais 6 vagas
       for (let i = 13; i <= 18; i++) {
-        gateIds.push(`G${i}`);
-        gates[`G${i}`] = null;
+        normalGateIds.push(`N${i}`);
+        normalGates[`N${i}`] = null;
       }
     }
     
-    // Redesenhar as vagas
+    // Expandir área de conserto
+    if (terminalLevel >= 2) {
+      for (let i = 4; i <= 6; i++) {
+        repairGateIds.push(`R${i}`);
+        repairGates[`R${i}`] = null;
+      }
+    }
+    
     renderGates();
     updateUI();
   }
 });
 
-// Renderizar vagas (dinâmico)
+// Renderizar vagas
 function renderGates() {
-  const container = document.getElementById('gatesContainer');
-  container.innerHTML = '';
-  
-  gateIds.forEach(id => {
+  const normalContainer = document.getElementById('normalGatesContainer');
+  normalContainer.innerHTML = '';
+  normalGateIds.forEach(id => {
     const gate = document.createElement('div');
     gate.className = 'gate';
     gate.dataset.id = id;
     gate.textContent = '🪑';
-    container.appendChild(gate);
+    normalContainer.appendChild(gate);
+  });
+
+  const repairContainer = document.getElementById('repairGatesContainer');
+  repairContainer.innerHTML = '';
+  repairGateIds.forEach(id => {
+    const gate = document.createElement('div');
+    gate.className = 'gate';
+    gate.dataset.id = id;
+    gate.textContent = '🔧';
+    repairContainer.appendChild(gate);
   });
 }
 
@@ -188,5 +284,5 @@ document.addEventListener('keydown', (e) => {
 
 // Iniciar jogo
 updateUI();
-renderGates(); // Primeira renderização
-setInterval(spawnPlane, 12000);
+renderGates();
+setInterval(spawnPlane, 1000 + Math.random() * 4000); // 1 a 5 segundos
