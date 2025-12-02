@@ -6,8 +6,8 @@ let planesInAir = [];
 let nextPlaneId = 1;
 let goldenPlaneUnlocked = false;
 
-// Vagas
-const gateIds = ['G1','G2','G3','G4','G5','G6'];
+// Vagas (inicialmente 6)
+let gateIds = ['G1','G2','G3','G4','G5','G6'];
 const gates = {};
 gateIds.forEach(id => gates[id] = null);
 
@@ -136,9 +136,41 @@ document.getElementById('upgradeTerminal').addEventListener('click', () => {
   if (terminalLevel < 3 && money >= 2000) {
     money -= 2000;
     terminalLevel++;
+    
+    // Expandir terminal: adicionar mais vagas
+    if (terminalLevel === 2) {
+      // Adiciona 6 vagas novas
+      for (let i = 7; i <= 12; i++) {
+        gateIds.push(`G${i}`);
+        gates[`G${i}`] = null;
+      }
+    } else if (terminalLevel === 3) {
+      // Adiciona mais 6 vagas
+      for (let i = 13; i <= 18; i++) {
+        gateIds.push(`G${i}`);
+        gates[`G${i}`] = null;
+      }
+    }
+    
+    // Redesenhar as vagas
+    renderGates();
     updateUI();
   }
 });
+
+// Renderizar vagas (dinâmico)
+function renderGates() {
+  const container = document.getElementById('gatesContainer');
+  container.innerHTML = '';
+  
+  gateIds.forEach(id => {
+    const gate = document.createElement('div');
+    gate.className = 'gate';
+    gate.dataset.id = id;
+    gate.textContent = '🪑';
+    container.appendChild(gate);
+  });
+}
 
 // Código secreto 25082003
 let inputSequence = '';
@@ -156,4 +188,5 @@ document.addEventListener('keydown', (e) => {
 
 // Iniciar jogo
 updateUI();
+renderGates(); // Primeira renderização
 setInterval(spawnPlane, 12000);
